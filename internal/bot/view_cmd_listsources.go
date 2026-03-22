@@ -17,6 +17,8 @@ type SourceLister interface {
 	Sources(ctx context.Context) ([]model.Source, error)
 }
 
+// ViewCmdListSource создает обработчик команды /listsources: он получает все источники,
+// сортирует их по приоритету, форматирует каждый через formatSource и отправляет единый список.
 func ViewCmdListSource(lister SourceLister) botkit.ViewFunc {
 	return func(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
 		sources, err := lister.Sources(ctx)

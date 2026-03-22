@@ -16,6 +16,8 @@ type RSSSource struct {
 	SourceName string
 }
 
+// NewRSSSourceFromModel преобразует model.Source в адаптер RSSSource, который затем используется
+// в fetcher.Fetch как конкретная реализация интерфейса Source для загрузки элементов из RSS-ленты.
 func NewRSSSourceFromModel(m model.Source) RSSSource {
 	return RSSSource{
 		URL:        m.FeedURL,
@@ -24,6 +26,8 @@ func NewRSSSourceFromModel(m model.Source) RSSSource {
 	}
 }
 
+// Fetch загружает RSS-ленту через loadFeed, превращает элементы rss.Item в model.Item
+// и подготавливает их для дальнейшей обработки в fetcher.processItems.
 func (s RSSSource) Fetch(ctx context.Context) ([]model.Item, error) {
 	feed, err := s.loadFeed(ctx, s.URL)
 	if err != nil {
@@ -42,14 +46,20 @@ func (s RSSSource) Fetch(ctx context.Context) ([]model.Item, error) {
 	}), nil
 }
 
+// ID возвращает идентификатор источника; его вызывает fetcher.processItems,
+// когда сохраняет статьи в storage.ArticlePostgresStorage.Store.
 func (s RSSSource) ID() int64 {
 	return s.SourceID
 }
 
+// Name возвращает человекочитаемое имя источника; оно используется в fetcher.Fetch
+// и fetcher.processItems для диагностических сообщений и логирования.
 func (s RSSSource) Name() string {
 	return s.SourceName
 }
 
+// loadFeed выполняет блокирующую загрузку RSS через отдельную goroutine и позволяет Fetch
+// отменить ожидание по context.Context, чтобы сборщик fetcher.Start мог корректно останавливаться.
 func (s RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error) {
 	var (
 		feedCh = make(chan *rss.Feed)

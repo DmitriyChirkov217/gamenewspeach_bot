@@ -43,6 +43,8 @@ var (
 	)
 )
 
+// EscapeForMarkdown экранирует спецсимволы MarkdownV2 и используется при формировании сообщений
+// в bot.formatSource и notifier.sendArticle, чтобы Telegram корректно отобразил текст.
 func EscapeForMarkdown(src string) string {
 	return replacer.Replace(src)
 }

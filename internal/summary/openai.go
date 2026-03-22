@@ -20,6 +20,8 @@ type OpenAISummarizer struct {
 	mu      sync.Mutex
 }
 
+// NewOpenAISummarizer создает клиент OpenAI и конфигурирует суммаризатор,
+// который затем передается в notifier.New и используется из Notifier.extractSummary.
 func NewOpenAISummarizer(apiKey, model, prompt string) *OpenAISummarizer {
 	s := &OpenAISummarizer{
 		client: openai.NewClient(apiKey),
@@ -36,6 +38,8 @@ func NewOpenAISummarizer(apiKey, model, prompt string) *OpenAISummarizer {
 	return s
 }
 
+// Summarize отправляет текст в модель OpenAI, сериализуя вызовы через mutex,
+// и возвращает финальное резюме для notifier.extractSummary и notifier.sendArticle.
 func (s *OpenAISummarizer) Summarize(text string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

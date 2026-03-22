@@ -14,6 +14,8 @@ type SourceStorage interface {
 	Add(ctx context.Context, source model.Source) (int64, error)
 }
 
+// ViewCmdAddSource создает обработчик команды /addsource: он разбирает аргументы через botkit.ParseJSON,
+// сохраняет новый источник через SourceStorage.Add и отправляет пользователю подтверждение.
 func ViewCmdAddSource(storage SourceStorage) botkit.ViewFunc {
 	type addSourceArgs struct {
 		Name     string `json:"name"`

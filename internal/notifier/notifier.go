@@ -35,6 +35,8 @@ type Notifier struct {
 	channelID        int64
 }
 
+// New создает сервис публикации новостей, который опирается на ArticleProvider и Summarizer
+// и затем запускается из main через метод Start.
 func New(
 	articleProvider ArticleProvider,
 	summarizer Summarizer,
@@ -53,6 +55,8 @@ func New(
 	}
 }
 
+// Start запускает периодический цикл отправки: он регулярно вызывает SelectAndSendArticle,
+// пока контекст из main не будет отменен.
 func (n *Notifier) Start(ctx context.Context) error {
 	ticker := time.NewTicker(n.sendInterval)
 	defer ticker.Stop()
@@ -73,6 +77,8 @@ func (n *Notifier) Start(ctx context.Context) error {
 	}
 }
 
+// SelectAndSendArticle выбирает одну еще не опубликованную статью, вызывает extractSummary и sendArticle,
+// а после успешной отправки помечает запись как опубликованную через ArticleProvider.MarkAsPosted.
 func (n *Notifier) SelectAndSendArticle(ctx context.Context) error {
 	topOneArticles, err := n.articles.AllNotPosted(ctx, time.Now().Add(-n.lookupTimeWindow), 1)
 	if err != nil {
@@ -99,6 +105,8 @@ func (n *Notifier) SelectAndSendArticle(ctx context.Context) error {
 
 var redundantNewLines = regexp.MustCompile(`\n{3,}`)
 
+// extractSummary получает текст статьи либо из готового article.Summary, либо по URL статьи,
+// очищает его через cleanupText и передает в Summarizer.Summarize для подготовки сообщения в sendArticle.
 func (n *Notifier) extractSummary(article model.Article) (string, error) {
 	var r io.Reader
 
@@ -127,10 +135,14 @@ func (n *Notifier) extractSummary(article model.Article) (string, error) {
 	return "\n\n" + summary, nil
 }
 
+// cleanupText нормализует текст статьи, убирая избыточные пустые строки,
+// и используется как подготовительный шаг внутри extractSummary перед суммаризацией.
 func cleanupText(text string) string {
 	return redundantNewLines.ReplaceAllString(text, "\n")
 }
 
+// sendArticle формирует Telegram-сообщение в MarkdownV2, экранируя поля через markup.EscapeForMarkdown,
+// и вызывается из SelectAndSendArticle после получения краткого описания статьи.
 func (n *Notifier) sendArticle(article model.Article, summary string) error {
 	const msgFormat = "*%s*%s\n\n%s"
 

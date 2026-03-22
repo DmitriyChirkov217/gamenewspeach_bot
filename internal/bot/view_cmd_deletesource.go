@@ -13,6 +13,8 @@ type SourceDeleter interface {
 	Delete(ctx context.Context, sourceID int64) error
 }
 
+// ViewCmdDeleteSource создает обработчик команды /deletesource: он читает ID из аргументов команды,
+// вызывает SourceDeleter.Delete и при успехе отправляет пользователю подтверждение удаления.
 func ViewCmdDeleteSource(deleter SourceDeleter) botkit.ViewFunc {
 	return func(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
 		idStr := update.Message.CommandArguments()

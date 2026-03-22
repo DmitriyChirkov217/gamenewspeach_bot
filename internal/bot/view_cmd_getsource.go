@@ -16,6 +16,8 @@ type SourceProvider interface {
 	SourceByID(ctx context.Context, id int64) (*model.Source, error)
 }
 
+// ViewCmdGetSource создает обработчик команды /getsource: он получает ID источника,
+// загружает запись через SourceProvider.SourceByID и форматирует ответ через formatSource.
 func ViewCmdGetSource(provider SourceProvider) botkit.ViewFunc {
 	return func(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
 		idStr := update.Message.CommandArguments()
@@ -41,6 +43,8 @@ func ViewCmdGetSource(provider SourceProvider) botkit.ViewFunc {
 	}
 }
 
+// formatSource собирает человекочитаемое описание источника и экранирует поля через markup.EscapeForMarkdown;
+// эту функцию используют ViewCmdGetSource и ViewCmdListSource при выводе информации пользователю.
 func formatSource(source model.Source) string {
 	return fmt.Sprintf(
 		"🌐 *%s*\nID: `%d`\nURL фида: %s\nПриоритет: %d",
