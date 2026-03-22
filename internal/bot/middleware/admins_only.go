@@ -8,6 +8,8 @@ import (
 	"github.com/defer-panic/news-feed-bot/internal/botkit"
 )
 
+// AdminsOnly возвращает middleware для Telegram-команд: он проверяет, входит ли отправитель в список администраторов канала,
+// и только после этого передает управление следующему обработчику next, например bot.ViewCmdAddSource или другим admin-командам.
 func AdminsOnly(channelID int64, next botkit.ViewFunc) botkit.ViewFunc {
 	return func(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
 		admins, err := bot.GetChatAdministrators(

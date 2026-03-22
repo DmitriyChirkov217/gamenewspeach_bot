@@ -12,6 +12,8 @@ type PrioritySetter interface {
 	SetPriority(ctx context.Context, sourceID int64, priority int) error
 }
 
+// ViewCmdSetPriority создает обработчик команды /setpriority: он разбирает JSON-аргументы через botkit.ParseJSON,
+// обновляет приоритет источника через PrioritySetter.SetPriority и отправляет подтверждение в чат.
 func ViewCmdSetPriority(prioritySetter PrioritySetter) botkit.ViewFunc {
 	type setPriorityArgs struct {
 		SourceID int64 `json:"source_id"`

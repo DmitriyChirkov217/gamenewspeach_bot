@@ -26,6 +26,8 @@ var (
 	once sync.Once
 )
 
+// Get лениво загружает конфигурацию из файлов и переменных окружения один раз,
+// а затем отдает ее main, notifier.New, fetcher.New и другим частям приложения как единый источник настроек.
 func Get() Config {
 	once.Do(func() {
 		loader := aconfig.LoaderFor(&cfg, aconfig.Config{

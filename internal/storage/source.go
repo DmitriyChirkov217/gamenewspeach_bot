@@ -14,10 +14,14 @@ type SourcePostgresStorage struct {
 	db *sqlx.DB
 }
 
+// NewSourceStorage создает PostgreSQL-хранилище источников, которое main передает
+// в fetcher.New и в команды управления источниками из пакета bot.
 func NewSourceStorage(db *sqlx.DB) *SourcePostgresStorage {
 	return &SourcePostgresStorage{db: db}
 }
 
+// Sources возвращает все зарегистрированные источники и используется в fetcher.Fetch
+// и bot.ViewCmdListSource для фонового обхода и административного списка.
 func (s *SourcePostgresStorage) Sources(ctx context.Context) ([]model.Source, error) {
 	conn, err := s.db.Connx(ctx)
 	if err != nil {
@@ -33,6 +37,7 @@ func (s *SourcePostgresStorage) Sources(ctx context.Context) ([]model.Source, er
 	return lo.Map(sources, func(source dbSource, _ int) model.Source { return model.Source(source) }), nil
 }
 
+// SourceByID возвращает один источник по ID; этот метод используется обработчиком bot.ViewCmdGetSource.
 func (s *SourcePostgresStorage) SourceByID(ctx context.Context, id int64) (*model.Source, error) {
 	conn, err := s.db.Connx(ctx)
 	if err != nil {
@@ -48,6 +53,8 @@ func (s *SourcePostgresStorage) SourceByID(ctx context.Context, id int64) (*mode
 	return (*model.Source)(&source), nil
 }
 
+// Add сохраняет новый источник RSS в базе и используется командой bot.ViewCmdAddSource,
+// чтобы пополнять список лент для дальнейшей работы fetcher.Fetch.
 func (s *SourcePostgresStorage) Add(ctx context.Context, source model.Source) (int64, error) {
 	conn, err := s.db.Connx(ctx)
 	if err != nil {
@@ -75,6 +82,8 @@ func (s *SourcePostgresStorage) Add(ctx context.Context, source model.Source) (i
 	return id, nil
 }
 
+// SetPriority обновляет приоритет источника; этот метод вызывает bot.ViewCmdSetPriority,
+// чтобы повлиять на порядок выбора новостей в notifier.AllNotPosted.
 func (s *SourcePostgresStorage) SetPriority(ctx context.Context, id int64, priority int) error {
 	conn, err := s.db.Connx(ctx)
 	if err != nil {
@@ -87,6 +96,8 @@ func (s *SourcePostgresStorage) SetPriority(ctx context.Context, id int64, prior
 	return err
 }
 
+// Delete удаляет источник из базы; его использует bot.ViewCmdDeleteSource
+// для административного исключения ленты из дальнейшего обхода fetcher.Fetch.
 func (s *SourcePostgresStorage) Delete(ctx context.Context, id int64) error {
 	conn, err := s.db.Connx(ctx)
 	if err != nil {

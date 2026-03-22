@@ -1,3 +1,6 @@
+// Программа запускает Telegram-бота для новостного канала: загружает конфигурацию, подключается к PostgreSQL,
+// поднимает сервисы сбора RSS-новостей и публикации анонсов, регистрирует административные команды бота,
+// стартует HTTP healthcheck и затем обрабатывает входящие обновления Telegram до завершения контекста.
 package main
 
 import (
@@ -23,6 +26,9 @@ import (
 	"github.com/defer-panic/news-feed-bot/internal/summary"
 )
 
+// main — точка входа приложения: она связывает конфигурацию из config.Get,
+// хранилища storage.NewArticleStorage/storage.NewSourceStorage, фоновые сервисы fetcher.New и notifier.New,
+// а также Telegram-команды из пакета bot, после чего запускает их в общом жизненном цикле приложения.
 func main() {
 	botAPI, err := tgbotapi.NewBotAPI(config.Get().TelegramBotToken)
 	if err != nil {

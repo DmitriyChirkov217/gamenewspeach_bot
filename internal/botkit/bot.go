@@ -14,10 +14,14 @@ type Bot struct {
 	cmdViews map[string]ViewFunc
 }
 
+// New создает оболочку над Telegram Bot API, в которой потом через RegisterCmdView
+// регистрируются обработчики команд, а через Run запускается цикл чтения обновлений.
 func New(api *tgbotapi.BotAPI) *Bot {
 	return &Bot{api: api}
 }
 
+// RegisterCmdView связывает имя команды с view-функцией; main вызывает его для команд
+// addsource, setpriority, getsource, listsources и deletesource.
 func (b *Bot) RegisterCmdView(cmd string, view ViewFunc) {
 	if b.cmdViews == nil {
 		b.cmdViews = make(map[string]ViewFunc)
@@ -26,6 +30,8 @@ func (b *Bot) RegisterCmdView(cmd string, view ViewFunc) {
 	b.cmdViews[cmd] = view
 }
 
+// Run запускает бесконечное чтение Telegram updates и для каждого обновления вызывает handleUpdate,
+// пока внешний context.Context из main не завершит работу бота.
 func (b *Bot) Run(ctx context.Context) error {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -44,6 +50,8 @@ func (b *Bot) Run(ctx context.Context) error {
 	}
 }
 
+// handleUpdate фильтрует неподходящие обновления, находит зарегистрированную команду из RegisterCmdView
+// и безопасно выполняет соответствующий ViewFunc с защитой от panic.
 func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
 	defer func() {
 		if p := recover(); p != nil {

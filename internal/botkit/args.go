@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 )
 
+// ParseJSON обобщенно декодирует JSON-аргументы команды Telegram и используется
+// в bot.ViewCmdAddSource и bot.ViewCmdSetPriority для разбора update.Message.CommandArguments().
 func ParseJSON[T any](src string) (T, error) {
 	var args T
 

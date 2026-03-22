@@ -15,10 +15,14 @@ type ArticlePostgresStorage struct {
 	db *sqlx.DB
 }
 
+// NewArticleStorage создает PostgreSQL-реализацию хранилища статей, которую используют
+// fetcher.New для сохранения новостей и notifier.New для поиска/пометки опубликованных записей.
 func NewArticleStorage(db *sqlx.DB) *ArticlePostgresStorage {
 	return &ArticlePostgresStorage{db: db}
 }
 
+// Store сохраняет новую статью в таблицу articles и вызывается из fetcher.processItems,
+// чтобы зафиксировать результаты очередного обхода RSS-источников.
 func (s *ArticlePostgresStorage) Store(ctx context.Context, article model.Article) error {
 	conn, err := s.db.Connx(ctx)
 	if err != nil {
@@ -43,6 +47,8 @@ func (s *ArticlePostgresStorage) Store(ctx context.Context, article model.Articl
 	return nil
 }
 
+// AllNotPosted возвращает еще не опубликованные статьи за заданный интервал;
+// его использует notifier.SelectAndSendArticle, чтобы выбрать следующий пост в канал.
 func (s *ArticlePostgresStorage) AllNotPosted(ctx context.Context, since time.Time, limit uint64) ([]model.Article, error) {
 	conn, err := s.db.Connx(ctx)
 	if err != nil {
@@ -88,6 +94,8 @@ func (s *ArticlePostgresStorage) AllNotPosted(ctx context.Context, since time.Ti
 	}), nil
 }
 
+// MarkAsPosted отмечает статью как опубликованную после успешной отправки;
+// этот метод вызывается из notifier.SelectAndSendArticle.
 func (s *ArticlePostgresStorage) MarkAsPosted(ctx context.Context, article model.Article) error {
 	conn, err := s.db.Connx(ctx)
 	if err != nil {

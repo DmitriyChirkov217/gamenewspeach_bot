@@ -38,6 +38,8 @@ type Fetcher struct {
 	filterKeywords []string
 }
 
+// New создает сервис сбора новостей, который получает список источников из SourcesProvider,
+// сохраняет статьи через ArticleStorage и запускается из main методом Start.
 func New(
 	articleStorage ArticleStorage,
 	sourcesProvider SourcesProvider,
@@ -52,6 +54,8 @@ func New(
 	}
 }
 
+// Start запускает периодический цикл обновления лент: он вызывает Fetch сразу и затем по таймеру,
+// пока контекст приложения из main не будет отменен.
 func (f *Fetcher) Start(ctx context.Context) error {
 	ticker := time.NewTicker(f.fetchInterval)
 	defer ticker.Stop()
@@ -72,6 +76,8 @@ func (f *Fetcher) Start(ctx context.Context) error {
 	}
 }
 
+// Fetch запрашивает список источников, для каждого создает src.NewRSSSourceFromModel,
+// параллельно загружает новости через Source.Fetch и передает результаты в processItems.
 func (f *Fetcher) Fetch(ctx context.Context) error {
 	sources, err := f.sources.Sources(ctx)
 	if err != nil {
@@ -104,6 +110,8 @@ func (f *Fetcher) Fetch(ctx context.Context) error {
 	return nil
 }
 
+// processItems нормализует время публикации, фильтрует элементы через itemShouldBeSkipped
+// и сохраняет подходящие статьи в постоянное хранилище через ArticleStorage.Store.
 func (f *Fetcher) processItems(ctx context.Context, source Source, items []model.Item) error {
 	for _, item := range items {
 		item.Date = item.Date.UTC()
@@ -127,6 +135,8 @@ func (f *Fetcher) processItems(ctx context.Context, source Source, items []model
 	return nil
 }
 
+// itemShouldBeSkipped проверяет категории и заголовок на совпадение с filterKeywords;
+// эту функцию использует processItems, чтобы не сохранять нежелательные новости.
 func (f *Fetcher) itemShouldBeSkipped(item model.Item) bool {
 	categoriesSet := set.New(item.Categories...)
 
