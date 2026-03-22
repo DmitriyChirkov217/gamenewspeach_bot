@@ -5,7 +5,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/defer-panic/news-feed-bot/internal/botkit"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/botkit"
 )
 
 // AdminsOnly возвращает middleware для Telegram-команд: он проверяет, входит ли отправитель в список администраторов канала,

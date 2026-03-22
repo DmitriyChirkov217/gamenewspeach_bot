@@ -5,9 +5,10 @@ package mocks
 
 import (
 	"context"
-	"github.com/defer-panic/news-feed-bot/internal/fetcher"
-	"github.com/defer-panic/news-feed-bot/internal/model"
 	"sync"
+
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/fetcher"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/model"
 )
 
 // Ensure, that SourceMock does implement fetcher.Source.

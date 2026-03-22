@@ -1,4 +1,4 @@
-module github.com/defer-panic/news-feed-bot
+module github.com/DmitriyChirkov217/gamenewspeach_bot
 
 go 1.20
 

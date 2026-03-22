@@ -13,8 +13,8 @@ import (
 	"github.com/go-shiori/go-readability"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/defer-panic/news-feed-bot/internal/botkit/markup"
-	"github.com/defer-panic/news-feed-bot/internal/model"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/botkit/markup"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/model"
 )
 
 type ArticleProvider interface {

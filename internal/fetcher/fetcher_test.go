@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/defer-panic/news-feed-bot/internal/fetcher"
-	"github.com/defer-panic/news-feed-bot/internal/fetcher/mocks"
-	"github.com/defer-panic/news-feed-bot/internal/model"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/fetcher"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/fetcher/mocks"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/model"
 )
 
 //go:embed testdata/feed1.xml

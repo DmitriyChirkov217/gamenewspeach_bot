@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/defer-panic/news-feed-bot/internal/model"
-	"github.com/defer-panic/news-feed-bot/internal/source"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/model"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/source"
 )
 
 //go:embed testdata/feed.xml

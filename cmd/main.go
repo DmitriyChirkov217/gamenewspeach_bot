@@ -16,14 +16,14 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
-	"github.com/defer-panic/news-feed-bot/internal/bot"
-	"github.com/defer-panic/news-feed-bot/internal/bot/middleware"
-	"github.com/defer-panic/news-feed-bot/internal/botkit"
-	"github.com/defer-panic/news-feed-bot/internal/config"
-	"github.com/defer-panic/news-feed-bot/internal/fetcher"
-	"github.com/defer-panic/news-feed-bot/internal/notifier"
-	"github.com/defer-panic/news-feed-bot/internal/storage"
-	"github.com/defer-panic/news-feed-bot/internal/summary"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/bot"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/bot/middleware"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/botkit"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/config"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/fetcher"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/notifier"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/storage"
+	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/summary"
 )
 
 // main — точка входа приложения: она связывает конфигурацию из config.Get,
