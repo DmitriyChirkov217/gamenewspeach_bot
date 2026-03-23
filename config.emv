@@ -1,7 +1,0 @@
-NFB_TELEGRAM_BOT_TOKEN=8599333066:AAHYXXrq5ljBKgwZrxVt_Wc8smV_HuGfKIo
-NFB_TELEGRAM_CHANNEL_ID=-1001234567890
-NFB_DATABASE_DSN=postgres:                                        //postgres:postgres@db:5432/news_feed_bot?sslmode=disable
-NFB_FETCH_INTERVAL=10m
-NFB_NOTIFICATION_INTERVAL=1m
-NFB_FILTER_KEYWORDS=["mobile","android","ios"]
-NFB_OPENAI_KEY=                                                   твой_openai_key
