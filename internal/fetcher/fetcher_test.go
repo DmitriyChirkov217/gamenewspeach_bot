@@ -15,6 +15,12 @@ import (
 	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/model"
 )
 
+type noopTagger struct{}
+
+func (noopTagger) Tags(ctx context.Context, item model.Item) ([]model.ArticleTag, error) {
+	return nil, nil
+}
+
 //go:embed testdata/feed1.xml
 var feed1 []byte
 
@@ -54,7 +60,7 @@ func TestFetcher_Fetch(t *testing.T) {
 					return nil
 				},
 			}
-			fetcher = fetcher.New(articleStorage, sourcesProvider, 0, nil)
+			fetcher = fetcher.New(articleStorage, sourcesProvider, noopTagger{}, 0, nil)
 		)
 
 		require.NoError(t, fetcher.Fetch(context.Background()))
@@ -71,7 +77,7 @@ func TestFetcher_Fetch(t *testing.T) {
 				},
 			}
 			filterKeywords = []string{"leetcode"}
-			fetcher        = fetcher.New(articleStorage, sourcesProvider, 0, filterKeywords)
+			fetcher        = fetcher.New(articleStorage, sourcesProvider, noopTagger{}, 0, filterKeywords)
 		)
 
 		require.NoError(t, fetcher.Fetch(context.Background()))

@@ -27,7 +27,22 @@ type Article struct {
 	Title       string
 	Link        string
 	Summary     string
+	Tags        []ArticleTag
 	PublishedAt time.Time
 	PostedAt    time.Time
 	CreatedAt   time.Time
+}
+
+type ArticleTag struct {
+	Tag    string
+	Weight float64
+}
+
+type User struct {
+	TelegramUserID int64
+	ChatID         int64
+	Username       string
+	FirstName      string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }

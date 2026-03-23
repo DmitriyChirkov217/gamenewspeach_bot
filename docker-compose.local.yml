@@ -10,8 +10,13 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: news_feed_bot
       PGDATA: /var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d news_feed_bot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - db:/var/lib/postgresql/data/
 
@@ -25,12 +30,16 @@ services:
       NFB_TELEGRAM_CHANNEL_ID: ${NFB_TELEGRAM_CHANNEL_ID}
       NFB_FETCH_INTERVAL: ${NFB_FETCH_INTERVAL}
       NFB_NOTIFICATION_INTERVAL: ${NFB_NOTIFICATION_INTERVAL}
+      NFB_NOTIFICATION_LOOKBACK: ${NFB_NOTIFICATION_LOOKBACK}
       NFB_FILTER_KEYWORDS: ${NFB_FILTER_KEYWORDS}
       NFB_OPENAI_KEY: ${NFB_OPENAI_KEY}
+      NFB_OPENAI_PROMPT: ${NFB_OPENAI_PROMPT}
+      NFB_OPENAI_MODEL: ${NFB_OPENAI_MODEL}
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   db:

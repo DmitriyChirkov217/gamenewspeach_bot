@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,9 +18,19 @@ import (
 	"github.com/DmitriyChirkov217/gamenewspeach_bot/internal/model"
 )
 
+const (
+	reactionLike    = "like"
+	reactionDislike = "dislike"
+)
+
 type ArticleProvider interface {
-	AllNotPosted(ctx context.Context, since time.Time, limit uint64) ([]model.Article, error)
-	MarkAsPosted(ctx context.Context, article model.Article) error
+	RecommendForUser(ctx context.Context, userID int64, since time.Time, limit uint64) ([]model.Article, error)
+	RecordDelivery(ctx context.Context, userID int64, articleID int64, messageID int) error
+	SaveReaction(ctx context.Context, userID int64, articleID int64, reaction int) error
+}
+
+type UserProvider interface {
+	Subscribers(ctx context.Context) ([]model.User, error)
 }
 
 type Summarizer interface {
@@ -28,47 +39,43 @@ type Summarizer interface {
 
 type Notifier struct {
 	articles         ArticleProvider
+	users            UserProvider
 	summarizer       Summarizer
 	bot              *tgbotapi.BotAPI
 	sendInterval     time.Duration
 	lookupTimeWindow time.Duration
-	channelID        int64
 }
 
-// New создает сервис публикации новостей, который опирается на ArticleProvider и Summarizer
-// и затем запускается из main через метод Start.
 func New(
 	articleProvider ArticleProvider,
+	userProvider UserProvider,
 	summarizer Summarizer,
 	bot *tgbotapi.BotAPI,
 	sendInterval time.Duration,
 	lookupTimeWindow time.Duration,
-	channelID int64,
 ) *Notifier {
 	return &Notifier{
 		articles:         articleProvider,
+		users:            userProvider,
 		summarizer:       summarizer,
 		bot:              bot,
 		sendInterval:     sendInterval,
 		lookupTimeWindow: lookupTimeWindow,
-		channelID:        channelID,
 	}
 }
 
-// Start запускает периодический цикл отправки: он регулярно вызывает SelectAndSendArticle,
-// пока контекст из main не будет отменен.
 func (n *Notifier) Start(ctx context.Context) error {
 	ticker := time.NewTicker(n.sendInterval)
 	defer ticker.Stop()
 
-	if err := n.SelectAndSendArticle(ctx); err != nil {
+	if err := n.SendPersonalizedArticles(ctx); err != nil {
 		return err
 	}
 
 	for {
 		select {
 		case <-ticker.C:
-			if err := n.SelectAndSendArticle(ctx); err != nil {
+			if err := n.SendPersonalizedArticles(ctx); err != nil {
 				return err
 			}
 		case <-ctx.Done():
@@ -77,36 +84,86 @@ func (n *Notifier) Start(ctx context.Context) error {
 	}
 }
 
-// SelectAndSendArticle выбирает одну еще не опубликованную статью, вызывает extractSummary и sendArticle,
-// а после успешной отправки помечает запись как опубликованную через ArticleProvider.MarkAsPosted.
-func (n *Notifier) SelectAndSendArticle(ctx context.Context) error {
-	topOneArticles, err := n.articles.AllNotPosted(ctx, time.Now().Add(-n.lookupTimeWindow), 1)
+func (n *Notifier) SendPersonalizedArticles(ctx context.Context) error {
+	users, err := n.users.Subscribers(ctx)
 	if err != nil {
 		return err
 	}
 
-	if len(topOneArticles) == 0 {
+	for _, user := range users {
+		if err := n.sendNextArticleToUser(ctx, user); err != nil {
+			log.Printf("[ERROR] failed to send article to user %d: %v", user.TelegramUserID, err)
+		}
+	}
+
+	return nil
+}
+
+func (n *Notifier) sendNextArticleToUser(ctx context.Context, user model.User) error {
+	candidates, err := n.articles.RecommendForUser(ctx, user.TelegramUserID, time.Now().Add(-n.lookupTimeWindow), 1)
+	if err != nil {
+		return err
+	}
+	if len(candidates) == 0 {
 		return nil
 	}
 
-	article := topOneArticles[0]
-
+	article := candidates[0]
 	summary, err := n.extractSummary(article)
 	if err != nil {
-		log.Printf("[ERROR] failed to extract summary: %v", err)
+		log.Printf("[WARN] failed to extract summary for article %d: %v", article.ID, err)
 	}
 
-	if err := n.sendArticle(article, summary); err != nil {
+	msg := tgbotapi.NewMessage(user.ChatID, formatArticle(article, summary))
+	msg.ParseMode = "MarkdownV2"
+	msg.ReplyMarkup = reactionKeyboard(article.ID)
+
+	sentMessage, err := n.bot.Send(msg)
+	if err != nil {
 		return err
 	}
 
-	return n.articles.MarkAsPosted(ctx, article)
+	return n.articles.RecordDelivery(ctx, user.TelegramUserID, article.ID, sentMessage.MessageID)
+}
+
+func reactionKeyboard(articleID int64) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("👍", reactionCallbackData(reactionLike, articleID)),
+			tgbotapi.NewInlineKeyboardButtonData("👎", reactionCallbackData(reactionDislike, articleID)),
+		),
+	)
+}
+
+func reactionCallbackData(reaction string, articleID int64) string {
+	return "reaction:" + reaction + ":" + strconv.FormatInt(articleID, 10)
+}
+
+func ParseReactionCallback(data string) (articleID int64, reaction int, ok bool) {
+	parts := strings.Split(data, ":")
+	if len(parts) != 3 || parts[0] != "reaction" {
+		return 0, 0, false
+	}
+
+	switch parts[1] {
+	case reactionLike:
+		reaction = 1
+	case reactionDislike:
+		reaction = -1
+	default:
+		return 0, 0, false
+	}
+
+	articleID, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		return 0, 0, false
+	}
+
+	return articleID, reaction, true
 }
 
 var redundantNewLines = regexp.MustCompile(`\n{3,}`)
 
-// extractSummary получает текст статьи либо из готового article.Summary, либо по URL статьи,
-// очищает его через cleanupText и передает в Summarizer.Summarize для подготовки сообщения в sendArticle.
 func (n *Notifier) extractSummary(article model.Article) (string, error) {
 	var r io.Reader
 
@@ -132,32 +189,25 @@ func (n *Notifier) extractSummary(article model.Article) (string, error) {
 		return "", err
 	}
 
-	return "\n\n" + summary, nil
+	return summary, nil
 }
 
-// cleanupText нормализует текст статьи, убирая избыточные пустые строки,
-// и используется как подготовительный шаг внутри extractSummary перед суммаризацией.
 func cleanupText(text string) string {
 	return redundantNewLines.ReplaceAllString(text, "\n")
 }
 
-// sendArticle формирует Telegram-сообщение в MarkdownV2, экранируя поля через markup.EscapeForMarkdown,
-// и вызывается из SelectAndSendArticle после получения краткого описания статьи.
-func (n *Notifier) sendArticle(article model.Article, summary string) error {
-	const msgFormat = "*%s*%s\n\n%s"
+func formatArticle(article model.Article, summary string) string {
+	const msgFormat = "*%s*\n\n%s\n\n%s"
 
-	msg := tgbotapi.NewMessage(n.channelID, fmt.Sprintf(
-		msgFormat,
-		markup.EscapeForMarkdown(article.Title),
-		markup.EscapeForMarkdown(summary),
-		markup.EscapeForMarkdown(article.Link),
-	))
-	msg.ParseMode = "MarkdownV2"
-
-	_, err := n.bot.Send(msg)
-	if err != nil {
-		return err
+	safeSummary := "_Краткое описание пока недоступно_"
+	if strings.TrimSpace(summary) != "" {
+		safeSummary = markup.EscapeForMarkdown(summary)
 	}
 
-	return nil
+	return fmt.Sprintf(
+		msgFormat,
+		markup.EscapeForMarkdown(article.Title),
+		safeSummary,
+		markup.EscapeForMarkdown(article.Link),
+	)
 }

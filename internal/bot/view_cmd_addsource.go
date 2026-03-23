@@ -26,7 +26,12 @@ func ViewCmdAddSource(storage SourceStorage) botkit.ViewFunc {
 	return func(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
 		args, err := botkit.ParseJSON[addSourceArgs](update.Message.CommandArguments())
 		if err != nil {
-			return err
+			msg := tgbotapi.NewMessage(
+				update.Message.Chat.ID,
+				"Использование:\n/addsource {\"name\":\"Steam\",\"url\":\"https://store.steampowered.com/feeds/news.xml\",\"priority\":10}",
+			)
+			_, _ = bot.Send(msg)
+			return nil
 		}
 
 		source := model.Source{
@@ -37,7 +42,8 @@ func ViewCmdAddSource(storage SourceStorage) botkit.ViewFunc {
 
 		sourceID, err := storage.Add(ctx, source)
 		if err != nil {
-			// TODO: send error message
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Не удалось добавить источник")
+			_, _ = bot.Send(msg)
 			return err
 		}
 

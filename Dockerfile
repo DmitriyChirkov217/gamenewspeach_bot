@@ -9,7 +9,7 @@ RUN go mod download
 COPY internal ./internal
 COPY cmd ./cmd
 
-RUN go build -o /app/news-feed-bot ./cmd/
+RUN go build -buildvcs=false -o /app/news-feed-bot ./cmd/
 
 EXPOSE 8080
 

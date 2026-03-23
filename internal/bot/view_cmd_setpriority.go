@@ -23,7 +23,12 @@ func ViewCmdSetPriority(prioritySetter PrioritySetter) botkit.ViewFunc {
 	return func(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
 		args, err := botkit.ParseJSON[setPriorityArgs](update.Message.CommandArguments())
 		if err != nil {
-			return err
+			msg := tgbotapi.NewMessage(
+				update.Message.Chat.ID,
+				"Использование:\n/setpriority {\"source_id\":1,\"priority\":10}",
+			)
+			_, _ = bot.Send(msg)
+			return nil
 		}
 
 		if err := prioritySetter.SetPriority(ctx, args.SourceID, args.Priority); err != nil {

@@ -4,14 +4,16 @@ import (
 	"context"
 	"log"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Bot struct {
-	api      *tgbotapi.BotAPI
-	cmdViews map[string]ViewFunc
+	api           *tgbotapi.BotAPI
+	cmdViews      map[string]ViewFunc
+	callbackViews map[string]ViewFunc
 }
 
 // New создает оболочку над Telegram Bot API, в которой потом через RegisterCmdView
@@ -28,6 +30,14 @@ func (b *Bot) RegisterCmdView(cmd string, view ViewFunc) {
 	}
 
 	b.cmdViews[cmd] = view
+}
+
+func (b *Bot) RegisterCallbackView(prefix string, view ViewFunc) {
+	if b.callbackViews == nil {
+		b.callbackViews = make(map[string]ViewFunc)
+	}
+
+	b.callbackViews[prefix] = view
 }
 
 // Run запускает бесконечное чтение Telegram updates и для каждого обновления вызывает handleUpdate,
@@ -63,9 +73,16 @@ func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
 		return
 	}
 
-	var view ViewFunc
+	if update.CallbackQuery != nil {
+		for prefix, view := range b.callbackViews {
+			if strings.HasPrefix(update.CallbackQuery.Data, prefix) {
+				if err := view(ctx, b.api, update); err != nil {
+					log.Printf("[ERROR] failed to execute callback view: %v", err)
+				}
+				return
+			}
+		}
 
-	if !update.Message.IsCommand() {
 		return
 	}
 
@@ -76,9 +93,7 @@ func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
 		return
 	}
 
-	view = cmdView
-
-	if err := view(ctx, b.api, update); err != nil {
+	if err := cmdView(ctx, b.api, update); err != nil {
 		log.Printf("[ERROR] failed to execute view: %v", err)
 
 		if _, err := b.api.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Internal error")); err != nil {
