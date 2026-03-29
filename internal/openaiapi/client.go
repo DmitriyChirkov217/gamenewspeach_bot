@@ -47,15 +47,21 @@ func (c *Client) CreateChatCompletion(
 	temperature float32,
 ) (string, error) {
 	payload := struct {
-		Model       string    `json:"model"`
-		Messages    []Message `json:"messages"`
-		MaxTokens   int       `json:"max_tokens,omitempty"`
-		Temperature float32   `json:"temperature,omitempty"`
+		Model               string    `json:"model"`
+		Messages            []Message `json:"messages"`
+		MaxTokens           int       `json:"max_tokens,omitempty"`
+		MaxCompletionTokens int       `json:"max_completion_tokens,omitempty"`
+		Temperature         float32   `json:"temperature,omitempty"`
 	}{
-		Model:       model,
-		Messages:    messages,
-		MaxTokens:   maxTokens,
-		Temperature: temperature,
+		Model:               model,
+		Messages:            messages,
+		MaxCompletionTokens: maxTokens,
+		Temperature:         temperature,
+	}
+
+	if !usesMaxCompletionTokens(model) {
+		payload.MaxTokens = maxTokens
+		payload.MaxCompletionTokens = 0
 	}
 
 	body, err := json.Marshal(payload)
@@ -115,3 +121,13 @@ func (c *Client) CreateChatCompletion(
 
 	return response.Choices[0].Message.Content, nil
 }
+
+func usesMaxCompletionTokens(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+
+	return strings.HasPrefix(model, "gpt-4o") ||
+		strings.HasPrefix(model, "o1") ||
+		strings.HasPrefix(model, "o3") ||
+		strings.HasPrefix(model, "o4")
+}
+
